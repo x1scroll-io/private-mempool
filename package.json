@@ -1,0 +1,7 @@
+{
+  "name": "@x1scroll/private-mempool",
+  "version": "0.1.0",
+  "description": "Compliance-preserving private mempool on X1 — ZK-gated confidential transaction submission",
+  "author": "x1scroll.io",
+  "license": "MIT"
+}
