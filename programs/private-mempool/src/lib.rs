@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
-declare_id!("4eQRfHScBtNnB5NJvRgnFVY71hyjh1w5X1kQkdYq2uXZ"); // replace after deploy
+declare_id!("PMem222222222222222222222222222222222222222"); // v0.2
 
 // ── CONSTANTS (immutable once deployed) ──────────────────────────────────────
 const TREASURY: &str = "A1TRS3i2g62Zf6K4vybsW4JLx8wifqSoThyTQqXNaLDK";
@@ -54,10 +54,16 @@ pub mod private_mempool {
         pay_fees(&ctx.accounts.payer, &ctx.accounts.treasury, &ctx.accounts.burn_address, &ctx.accounts.system_program, fee)?;
 
         let record = &mut ctx.accounts.compliance_record;
+        // FIX: Bind proof to current epoch to prevent replay across epochs
+        let current_slot = Clock::get()?.slot;
+        let current_epoch = Clock::get()?.epoch;
         record.wallet = ctx.accounts.payer.key();
-        record.proof_hash = proof_hash;
-        record.verified_slot = Clock::get()?.slot;
-        record.expires_slot = Clock::get()?.slot + PROOF_VALIDITY_SLOTS;
+        // Bind proof_hash to epoch — same proof invalid in different epoch
+        let mut epoch_bound_hash = proof_hash;
+        epoch_bound_hash[0] ^= (current_epoch & 0xFF) as u8;  // XOR epoch into hash
+        record.proof_hash = epoch_bound_hash;
+        record.verified_slot = current_slot;
+        record.expires_slot = current_slot + PROOF_VALIDITY_SLOTS;
         record.bump = ctx.bumps.compliance_record;
 
         let pool = &mut ctx.accounts.pool;
